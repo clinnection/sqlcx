@@ -214,6 +214,21 @@ func buildQueries(req *plugin.CodeGenRequest, structs []Struct) ([]Query, error)
 
 		if len(query.Params) == 1 && qpl != 0 {
 			p := query.Params[0]
+
+			if p.Column.Name == "filter" && p.Column.Table == nil {
+				p.Column.IsClause = true
+				gq.WhereClause = &QueryClause{
+					Position: 1,
+					Name:     "filter",
+				}
+			}
+			if p.Column.Name == "orderby" && p.Column.Table == nil {
+				p.Column.IsClause = true
+				gq.OrderbyClause = &QueryClause{
+					Position: 1,
+					Name:     "orderby",
+				}
+			}
 			gq.Arg = QueryValue{
 				Name:      paramName(p),
 				DBName:    p.Column.GetName(),
@@ -224,8 +239,24 @@ func buildQueries(req *plugin.CodeGenRequest, structs []Struct) ([]Query, error)
 		} else if len(query.Params) >= 1 {
 			var cols []goColumn
 			for _, p := range query.Params {
+				number := int(p.Number)
+
+				if p.Column.Name == "filter" && p.Column.Table == nil {
+					p.Column.IsClause = true
+					gq.WhereClause = &QueryClause{
+						Position: number,
+						Name:     "arg.Filter",
+					}
+				}
+				if p.Column.Name == "orderby" && p.Column.Table == nil {
+					p.Column.IsClause = true
+					gq.OrderbyClause = &QueryClause{
+						Position: number,
+						Name:     "arg.Orderby",
+					}
+				}
 				cols = append(cols, goColumn{
-					id:     int(p.Number),
+					id:     int(number),
 					Column: p.Column,
 				})
 			}

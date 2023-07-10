@@ -111,14 +111,18 @@ func (v QueryValue) Params() string {
 		if !v.Column.IsSqlcSlice && strings.HasPrefix(v.Typ, "[]") && v.Typ != "[]byte" && !v.SQLDriver.IsPGX() {
 			out = append(out, "pq.Array("+v.Name+")")
 		} else {
-			out = append(out, v.Name)
+			if !v.Column.IsClause {
+				out = append(out, v.Name)
+			}
 		}
 	} else {
 		for _, f := range v.Struct.Fields {
 			if !f.HasSqlcSlice() && strings.HasPrefix(f.Type, "[]") && f.Type != "[]byte" && !v.SQLDriver.IsPGX() {
 				out = append(out, "pq.Array("+v.VariableForField(f)+")")
 			} else {
-				out = append(out, v.VariableForField(f))
+				if !f.Column.IsClause {
+					out = append(out, v.VariableForField(f))
+				}
 			}
 		}
 	}
@@ -197,17 +201,24 @@ func (v QueryValue) VariableForField(f Field) string {
 	return v.Name + "." + f.Name
 }
 
+type QueryClause struct {
+	Position int
+	Name     string
+}
+
 // A struct used to generate methods and fields on the Queries struct
 type Query struct {
-	Cmd          string
-	Comments     []string
-	MethodName   string
-	FieldName    string
-	ConstantName string
-	SQL          string
-	SourceName   string
-	Ret          QueryValue
-	Arg          QueryValue
+	Cmd           string
+	Comments      []string
+	MethodName    string
+	FieldName     string
+	ConstantName  string
+	SQL           string
+	SourceName    string
+	Ret           QueryValue
+	Arg           QueryValue
+	WhereClause   *QueryClause
+	OrderbyClause *QueryClause
 	// Used for :copyfrom
 	Table *plugin.Identifier
 }
